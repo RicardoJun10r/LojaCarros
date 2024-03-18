@@ -7,7 +7,7 @@ import java.net.UnknownHostException;
 import java.io.IOException;
 
 public class UserInterface implements Runnable {
-    
+
     private final String ENDERECO_SERVER = "localhost";
 
     private ClientSocket clientSocket;
@@ -49,7 +49,7 @@ public class UserInterface implements Runnable {
             System.out.print("> ");
             String senha = scan.next();
             enviar(ADMIN + ";1;" + login + ";" + senha + ";");
-        } else if (op.equals("2")){
+        } else if (op.equals("2")) {
             String senha;
             String nova_conta = "";
             System.out.println("Registrando\n> CPF");
@@ -68,9 +68,9 @@ public class UserInterface implements Runnable {
     }
 
     private void menu() {
-        if(ADMIN){
+        if (ADMIN) {
             System.out.println(
-                    "> 3 [ ADICIONAR CARRO ]\n> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> sair");
+                    "> 3 [ ADICIONAR CARRO ]\n> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> 8 [ APAGAR CARRO ]\n> 9 [ ATUALIZAR CARRO ]> sair");
         } else {
             System.out.println(
                     "> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> sair");
@@ -142,6 +142,32 @@ public class UserInterface implements Runnable {
                 msg += this.scan.next() + ";";
                 System.out.println("> RENAVAM");
                 System.out.print("> ");
+                msg += this.scan.next();
+                enviar(msg);
+                break;
+            case "8":
+                msg = ADMIN + ";8;";
+                System.out.println("> RENAVAM");
+                System.out.print("> ");
+                msg += this.scan.next();
+                enviar(msg);
+                break;
+            case "9":
+                msg = ADMIN + ";9;";
+                System.out.println("> RENAVAM");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> NOME OU * [ VAZIO ]");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> CATEGORIA OU * [ VAZIO ]\n> 1 [ ECONOMICO ]\n> 2 [ INTERMEDIARIO ]\n> 3 [ EXECUTIVO ]");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> DATA DE CRIAÇÃO [ ANO-MES-DIA ] OU * [ VAZIO ]");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> PREÇO OU * [ VAZIO ]");
+                System.out.print("> R$ ");
                 msg += this.scan.next();
                 enviar(msg);
                 break;

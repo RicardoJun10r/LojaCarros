@@ -217,7 +217,7 @@ public class ServerLoja {
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-                                unicast(clientSocket, "Veiculo Criado!");
+                                unicast(clientSocket, "Veiculo Adicionado!");
                             } else {
                                 unicast(clientSocket, "Sem autorização!");
                             }
@@ -259,7 +259,7 @@ public class ServerLoja {
                         case "7": {
                             // COMPRAR CARRO
                             System.out.println(
-                                    "[6] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                                    "[7] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
                             try {
                                 Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[2])).getValor();
                                 Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(msg[3])).getValor();
@@ -275,6 +275,59 @@ public class ServerLoja {
                             }
                             break;
                         }
+                        case "8": {
+                            // APAGAR CARRO
+                            System.out.println(
+                                    "[8] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            if(Boolean.parseBoolean(msg[0])){
+                                try {
+                                    
+                                    this.veiculos.Remover(Integer.parseInt(msg[2]));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                unicast(clientSocket, "Veiculo Removido!");
+                            } else {
+                                unicast(clientSocket, "Sem autorização!");
+                            }
+                            break;
+                        }
+                        case "9": {
+                            // ATUALIZAR CARRO
+                            System.out.println(
+                                    "[9] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            if(Boolean.parseBoolean(msg[0])){
+                                try {
+                                    Categoria nova;
+                                    Veiculo veiculo_velho = this.veiculos.BuscarCF(Integer.parseInt(msg[2])).getValor();
+                                    switch (msg[4]) {
+                                        case "1":
+                                            nova = Categoria.ECONOMICO;
+                                            break;
+                                        case "2":
+                                            nova = Categoria.INTERMEDIARIO;
+                                            break;
+                                        case "3":
+                                            nova = Categoria.EXECUTIVO;
+                                            break;
+                                        default:
+                                            nova = veiculo_velho.getCategoria();
+                                            break;
+                                    }
+                                    Veiculo veiculo_novo = new Veiculo(msg[2], msg[3], nova, LocalDate.parse(msg[5]),
+                                    Double.parseDouble(msg[6]));
+                                    if(attCampos(veiculo_novo, veiculo_velho)){
+                                        this.veiculos.Atualizar(veiculo_velho, Integer.parseInt(veiculo_velho.getRenavam()));
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                unicast(clientSocket, "Veiculo Atualizado!");
+                            } else {
+                                unicast(clientSocket, "Sem autorização!");
+                            }
+                            break;
+                        }
                         default:
                             System.out.println(
                                     "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
@@ -285,6 +338,35 @@ public class ServerLoja {
         } finally {
             clientSocket.close();
         }
+    }
+
+    private Boolean attCampos(Veiculo novo, Veiculo velho){
+
+        boolean hasAtt = false;
+
+        if(novo.getNome() != null && !novo.getNome().isEmpty() && !novo.getNome().equalsIgnoreCase("*")){
+            velho.setNome(novo.getNome());
+            hasAtt = true;
+        }
+        if(novo.getCategoria() != null){
+            velho.setCategoria(novo.getCategoria());
+            hasAtt = true;
+        }
+        if(novo.getA_venda() != null){
+            velho.setA_venda(novo.getA_venda());
+            hasAtt = true;
+        }
+        if(novo.getCriado_em() != null && !novo.getCriado_em().equals("*")){
+            velho.setCriado_em(novo.getCriado_em());
+            hasAtt = true;
+        }
+        if(novo.getPreco() != null && novo.getPreco() > 0 ){
+            velho.setPreco(novo.getPreco());
+            hasAtt = true;
+        }
+
+        return hasAtt;
+        
     }
 
     private void unicast(ClientSocket destinario, String mensagem) {
