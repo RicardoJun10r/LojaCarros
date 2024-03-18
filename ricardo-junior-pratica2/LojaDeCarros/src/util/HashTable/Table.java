@@ -113,6 +113,7 @@ public class Table<V, K> {
             if(velha_tabela[i] != null){
 
                 Adicionar(velha_tabela[i].getValor(), velha_tabela[i].getChave());
+                this.size--;
 
             }
             
@@ -240,7 +241,7 @@ public class Table<V, K> {
             res.append(i);
             while (index != null) {
                 res.append(" --> "); 
-                res.append(index.getValor());
+                res.append(index.getValor().toString());
                 index = index.getProx();
             }
             res.append("\n");

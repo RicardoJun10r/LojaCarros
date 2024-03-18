@@ -22,7 +22,11 @@ public class Cliente extends Usuario {
 
     @Override
     public String toString() {
-        return "Cliente [veiculos=" + veiculos + "]";
+        String carros = "";
+        for(Veiculo index : veiculos){
+            carros += index.toString() + "\n";
+        }
+        return "Cliente [veiculos=" + carros + "]";
     }
 
 }

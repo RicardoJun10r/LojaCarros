@@ -90,7 +90,7 @@ public class Veiculo implements Serializable {
     @Override
     public String toString() {
         return "Veiculo [renavam=" + renavam + ", nome=" + nome + ", categoria=" + categoria + ", criado_em="
-                + criado_em + ", preco=" + preco + ", cliente=" + cliente + ", a venda=" + a_venda + "]";
+                + criado_em + ", preco=" + preco + ", a venda=" + a_venda + "]";
     }
 
 }

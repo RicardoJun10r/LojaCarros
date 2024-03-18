@@ -18,10 +18,10 @@ public class UserInterface implements Runnable {
 
     private final Boolean ADMIN;
 
-    public UserInterface() {
+    public UserInterface(Boolean admin) {
         this.scan = new Scanner(System.in);
         this.logado = false;
-        this.ADMIN = false;
+        this.ADMIN = admin;
     }
 
     @Override
@@ -48,7 +48,7 @@ public class UserInterface implements Runnable {
             System.out.println("> Senha");
             System.out.print("> ");
             String senha = scan.next();
-            enviar("1;" + login + ";" + senha + ";" + ADMIN);
+            enviar(ADMIN + ";1;" + login + ";" + senha + ";");
         } else if (op.equals("2")){
             String senha;
             String nova_conta = "";
@@ -59,7 +59,7 @@ public class UserInterface implements Runnable {
             System.out.print("> ");
             senha = scan.next();
             nova_conta += senha;
-            enviar("2;" + nova_conta + ";" + ADMIN);
+            enviar(ADMIN + ";2;" + nova_conta + ";");
         }
     }
 
@@ -68,8 +68,13 @@ public class UserInterface implements Runnable {
     }
 
     private void menu() {
-        System.out.println(
-                "> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> sair");
+        if(ADMIN){
+            System.out.println(
+                    "> 3 [ ADICIONAR CARRO ]\n> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> sair");
+        } else {
+            System.out.println(
+                    "> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> sair");
+        }
     }
 
     private void messageLoop() {
@@ -95,24 +100,43 @@ public class UserInterface implements Runnable {
     private void processOption(String option) {
         String msg;
         switch (option) {
+            case "3":
+                msg = ADMIN + ";3;";
+                System.out.println("> RENAVAM");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> NOME");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> CATEGORIA\n> 1 [ ECONOMICO ]\n> 2 [ INTERMEDIARIO ]\n> 3 [ EXECUTIVO ]");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> DATA DE CRIAÇÃO [ ANO-MES-DIA ]");
+                System.out.print("> ");
+                msg += this.scan.next() + ";";
+                System.out.println("> PREÇO");
+                System.out.print("> R$ ");
+                msg += this.scan.next();
+                enviar(msg);
+                break;
             case "4":
-                msg = "4;";
+                msg = ADMIN + ";4;";
                 System.out.println("> RENAVAM");
                 System.out.print("> ");
                 msg += this.scan.next();
                 enviar(msg);
                 break;
             case "5":
-                msg = "5;";
+                msg = ADMIN + ";5;";
                 System.out.println("> LISTANDO...");
                 enviar(msg);
                 break;
             case "6":
-                msg = "6;";
+                msg = ADMIN + ";6;";
                 enviar(msg);
                 break;
             case "7":
-                msg = "7;";
+                msg = ADMIN + ";7;";
                 System.out.println("> CPF");
                 System.out.print("> ");
                 msg += this.scan.next() + ";";
