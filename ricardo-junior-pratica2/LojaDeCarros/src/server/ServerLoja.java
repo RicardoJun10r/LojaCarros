@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import model.Cliente;
 import model.Funcionario;
@@ -65,11 +66,11 @@ public class ServerLoja {
         this.veiculos.Adicionar(
                 new Veiculo("9999", "Fusion", Categoria.INTERMEDIARIO, LocalDate.of(2021, 10, 10), 40000.0),
                 Integer.parseInt("9999"));
-        this.veiculos.Adicionar(new Veiculo("1010", "HB20", Categoria.ECONOMICO, LocalDate.of(2022, 6, 20), 23000.0),
-                Integer.parseInt("1010"));
+        this.veiculos.Adicionar(new Veiculo("7842", "HB20", Categoria.ECONOMICO, LocalDate.of(2022, 6, 20), 23000.0),
+                Integer.parseInt("7842"));
         this.veiculos.Adicionar(
                 new Veiculo("1112", "Ecosport", Categoria.EXECUTIVO, LocalDate.of(2022, 7, 15), 30000.0),
-                Integer.parseInt("11011"));
+                Integer.parseInt("1112"));
         this.veiculos.Adicionar(new Veiculo("1212", "HR-V", Categoria.EXECUTIVO, LocalDate.of(2021, 9, 5), 290000.0),
                 Integer.parseInt("1212"));
     }
@@ -193,7 +194,7 @@ public class ServerLoja {
                             // ADICIONAR CARRO
                             System.out.println(
                                     "[3] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            if(Boolean.parseBoolean(msg[0])){
+                            if (Boolean.parseBoolean(msg[0])) {
                                 try {
                                     Categoria nova;
                                     switch (msg[4]) {
@@ -241,7 +242,11 @@ public class ServerLoja {
                             System.out.println(
                                     "[5] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
                             try {
-                                unicast(clientSocket, this.veiculos.Listar());
+                                String lista = this.veiculos.toStream()
+                                        .filter(veiculo -> veiculo.getA_venda() || veiculo.getCliente() == null)
+                                        .map(Veiculo::toString)
+                                        .collect(Collectors.joining("\n"));
+                                unicast(clientSocket, lista);
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 unicast(clientSocket, "Lista vazia");
@@ -252,8 +257,10 @@ public class ServerLoja {
                             // QUANTIDADE DE CARROS
                             System.out.println(
                                     "[6] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            int quantidade_carros = (int) this.veiculos.toStream()
+                                    .filter(veiculo -> veiculo.getA_venda()).count();
                             unicast(clientSocket,
-                                    "Tem " + this.veiculos.Quantidade().toString() + " veículos cadastrados!");
+                                    "Tem " + quantidade_carros + " veículos cadastrados!");
                             break;
                         }
                         case "7": {
@@ -268,7 +275,7 @@ public class ServerLoja {
                                 veiculo.setCliente(cliente);
                                 this.clientes.Atualizar(cliente, Integer.parseInt(msg[2]));
                                 this.veiculos.Atualizar(veiculo, Integer.parseInt(msg[3]));
-                                unicast(clientSocket, "Você adquiriu o carro!");
+                                unicast(clientSocket, "Você adquiriu o carro: " + veiculo.toString());
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 unicast(clientSocket, "Cliente e/ou veículo não encontrado!");
@@ -279,9 +286,9 @@ public class ServerLoja {
                             // APAGAR CARRO
                             System.out.println(
                                     "[8] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            if(Boolean.parseBoolean(msg[0])){
+                            if (Boolean.parseBoolean(msg[0])) {
                                 try {
-                                    
+
                                     this.veiculos.Remover(Integer.parseInt(msg[2]));
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -296,7 +303,7 @@ public class ServerLoja {
                             // ATUALIZAR CARRO
                             System.out.println(
                                     "[9] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            if(Boolean.parseBoolean(msg[0])){
+                            if (Boolean.parseBoolean(msg[0])) {
                                 try {
                                     Categoria nova;
                                     Veiculo veiculo_velho = this.veiculos.BuscarCF(Integer.parseInt(msg[2])).getValor();
@@ -315,10 +322,9 @@ public class ServerLoja {
                                             break;
                                     }
                                     Veiculo veiculo_novo = new Veiculo(msg[2], msg[3], nova, LocalDate.parse(msg[5]),
-                                    Double.parseDouble(msg[6]));
-                                    if(attCampos(veiculo_novo, veiculo_velho)){
-                                        this.veiculos.Atualizar(veiculo_velho, Integer.parseInt(veiculo_velho.getRenavam()));
-                                    }
+                                            Double.parseDouble(msg[6]));
+                                    this.veiculos.Atualizar(veiculo_novo,
+                                            Integer.parseInt(veiculo_velho.getRenavam()));
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -340,33 +346,33 @@ public class ServerLoja {
         }
     }
 
-    private Boolean attCampos(Veiculo novo, Veiculo velho){
+    private Boolean attCampos(Veiculo novo, Veiculo velho) {
 
         boolean hasAtt = false;
 
-        if(novo.getNome() != null && !novo.getNome().isEmpty() && !novo.getNome().equalsIgnoreCase("*")){
+        if (novo.getNome() != null && !novo.getNome().isEmpty() && !novo.getNome().equalsIgnoreCase("*")) {
             velho.setNome(novo.getNome());
             hasAtt = true;
         }
-        if(novo.getCategoria() != null){
+        if (novo.getCategoria() != null) {
             velho.setCategoria(novo.getCategoria());
             hasAtt = true;
         }
-        if(novo.getA_venda() != null){
+        if (novo.getA_venda() != null) {
             velho.setA_venda(novo.getA_venda());
             hasAtt = true;
         }
-        if(novo.getCriado_em() != null && !novo.getCriado_em().equals("*")){
+        if (novo.getCriado_em() != null && !novo.getCriado_em().equals("*")) {
             velho.setCriado_em(novo.getCriado_em());
             hasAtt = true;
         }
-        if(novo.getPreco() != null && novo.getPreco() > 0 ){
+        if (novo.getPreco() != null && novo.getPreco() > 0) {
             velho.setPreco(novo.getPreco());
             hasAtt = true;
         }
 
         return hasAtt;
-        
+
     }
 
     private void unicast(ClientSocket destinario, String mensagem) {

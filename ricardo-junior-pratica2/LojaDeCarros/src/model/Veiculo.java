@@ -29,6 +29,7 @@ public class Veiculo implements Serializable {
         this.criado_em = criado_em;
         this.preco = preco;
         this.a_venda = true;
+        this.cliente = null;
     }
     
     public Boolean getA_venda() {

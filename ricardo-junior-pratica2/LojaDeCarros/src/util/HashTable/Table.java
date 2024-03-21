@@ -1,6 +1,7 @@
 package util.HashTable;
 
 import java.text.DecimalFormat;
+import java.util.stream.Stream;
 
 public class Table<V, K> {
     
@@ -248,6 +249,20 @@ public class Table<V, K> {
         }
 
         return res.toString();
+    }
+
+    public Stream<V> toStream(){
+        return Stream.of(tabela).flatMap(
+            node -> {
+                Stream.Builder<V> builder = Stream.builder();
+                Node<V, K> index = node;
+                while (index != null) {
+                    builder.accept(index.getValor());
+                    index = index.getProx();
+                }
+                return builder.build();
+            }
+        );
     }
 
     public Integer Tamanho(){
