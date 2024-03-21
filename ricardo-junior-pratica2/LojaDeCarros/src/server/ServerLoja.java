@@ -346,35 +346,6 @@ public class ServerLoja {
         }
     }
 
-    private Boolean attCampos(Veiculo novo, Veiculo velho) {
-
-        boolean hasAtt = false;
-
-        if (novo.getNome() != null && !novo.getNome().isEmpty() && !novo.getNome().equalsIgnoreCase("*")) {
-            velho.setNome(novo.getNome());
-            hasAtt = true;
-        }
-        if (novo.getCategoria() != null) {
-            velho.setCategoria(novo.getCategoria());
-            hasAtt = true;
-        }
-        if (novo.getA_venda() != null) {
-            velho.setA_venda(novo.getA_venda());
-            hasAtt = true;
-        }
-        if (novo.getCriado_em() != null && !novo.getCriado_em().equals("*")) {
-            velho.setCriado_em(novo.getCriado_em());
-            hasAtt = true;
-        }
-        if (novo.getPreco() != null && novo.getPreco() > 0) {
-            velho.setPreco(novo.getPreco());
-            hasAtt = true;
-        }
-
-        return hasAtt;
-
-    }
-
     private void unicast(ClientSocket destinario, String mensagem) {
         ClientSocket emissor = this.USUARIOS.stream()
                 .filter(user -> user.getSocketAddress().equals(destinario.getSocketAddress()))
