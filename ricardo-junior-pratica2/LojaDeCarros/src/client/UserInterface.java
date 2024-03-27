@@ -183,9 +183,9 @@ public class UserInterface implements Runnable {
     public void start() throws IOException, UnknownHostException {
         try {
             clientSocket = new ClientSocket(
-                    new Socket(ENDERECO_SERVER, 1025));
+                    new Socket(ENDERECO_SERVER, 1042));
             System.out
-                    .println("Cliente conectado ao servidor de endereço = " + ENDERECO_SERVER + " na porta = " + 1025);
+                    .println("Cliente conectado ao gateway de endereço = " + ENDERECO_SERVER + " na porta = " + 1042);
             new Thread(this).start();
             messageLoop();
         } finally {

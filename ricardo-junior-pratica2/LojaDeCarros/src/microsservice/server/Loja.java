@@ -1,4 +1,4 @@
-package server;
+package microsservice.server;
 
 import java.io.IOException;
 
