@@ -2,31 +2,21 @@ package microsservice.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.SocketAddress;
-import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import model.Cliente;
 import model.Funcionario;
-import model.Veiculo;
-import util.Categoria;
 import util.ClientSocket;
-import util.Sessao;
 import util.HashTable.Table;
 
 public class AutenticacaoService {
-    
+
     public final int PORTA = 1050;
 
     private ServerSocket serverSocket;
 
     private final List<ClientSocket> USUARIOS = new LinkedList<>();
-
-    private final Map<SocketAddress, Sessao> SESSAO = new HashMap<>();
 
     private Table<Cliente, Integer> clientes;
 
@@ -45,7 +35,7 @@ public class AutenticacaoService {
 
     public void start() throws IOException {
         serverSocket = new ServerSocket(PORTA);
-        System.out.println("Iniciando servidor na porta = " + PORTA);
+        System.out.println("Iniciando serviço de autenticação na porta = " + PORTA);
         clientConnectionLoop();
     }
 
@@ -53,7 +43,6 @@ public class AutenticacaoService {
         while (true) {
             ClientSocket clientSocket = new ClientSocket(this.serverSocket.accept());
             USUARIOS.add(clientSocket);
-            this.SESSAO.put(clientSocket.getSocketAddress(), new Sessao(false, false));
             new Thread(() -> {
                 try {
                     clientMessageLoop(clientSocket);
@@ -64,249 +53,71 @@ public class AutenticacaoService {
         }
     }
 
-    private Boolean autenticar(ClientSocket clientSocket) {
-        if (this.SESSAO.get(clientSocket.getSocketAddress()).getLogado())
-            return true;
-        else
-            return false;
-    }
-
     private void clientMessageLoop(ClientSocket clientSocket) throws IOException {
         String mensagem;
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
-                if (!autenticar(clientSocket)) {
-                    System.out.println("NÃO LOGADO!");
-                    switch (msg[1]) {
-                        case "sair": {
-                            // SAIR
-                            System.out.println(
-                                    "[sair] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            break;
-                        }
-                        case "1": {
-                            // AUTENTICAR
-                            System.out.println(
-                                    "[1] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            try {
-                                if (Boolean.parseBoolean(msg[0])) {
-                                    Funcionario funcionario = this.funcionarios.BuscarCF(Integer.parseInt(msg[2]))
-                                            .getValor();
-                                    if (funcionario != null) {
-                                        if (msg[3].equals(funcionario.getSenha())) {
-                                            this.SESSAO.put(clientSocket.getSocketAddress(), new Sessao(true, true));
-                                            unicast(clientSocket, "status true");
-                                        } else {
-                                            unicast(clientSocket, "status false");
-                                        }
+                switch (msg[2]) {
+                    case "1": {
+                        // AUTENTICAR
+                        System.out.println(
+                                "[1] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                        try {
+                            if (Boolean.parseBoolean(msg[3])) {
+                                Funcionario funcionario = this.funcionarios.BuscarCF(Integer.parseInt(msg[4]))
+                                        .getValor();
+                                if (funcionario != null) {
+                                    if (msg[5].equals(funcionario.getSenha())) {
+                                        unicast(clientSocket, "autenticar;servico;status true;true" + msg[6]);
                                     } else {
-                                        unicast(clientSocket, "status false");
+                                        unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
                                     }
                                 } else {
-                                    Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[2]))
-                                            .getValor();
-                                    if (cliente != null) {
-                                        if (msg[3].equals(cliente.getSenha())) {
-                                            this.SESSAO.put(clientSocket.getSocketAddress(), new Sessao(true, true));
-                                            unicast(clientSocket, "status true");
-                                        } else {
-                                            unicast(clientSocket, "status false");
-                                        }
+                                    unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
+                                }
+                            } else {
+                                Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[4]))
+                                        .getValor();
+                                if (cliente != null) {
+                                    if (msg[5].equals(cliente.getSenha())) {
+                                        unicast(clientSocket, "autenticar;servico;status true;false" + msg[6]);
                                     } else {
-                                        unicast(clientSocket, "status false");
+                                        unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
                                     }
-                                }
-
-                            } catch (NullPointerException e) {
-                                e.printStackTrace();
-                            }
-                            break;
-                        }
-                        case "2": {
-                            // CRIAR CONTA USUARIO
-                            System.out.println(
-                                    "[2] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            try {
-                                if (Boolean.parseBoolean(msg[0])) {
-                                    this.funcionarios.Adicionar(new Funcionario(msg[2], msg[3]),
-                                            Integer.parseInt(msg[2]));
-                                    unicast(clientSocket, "Funcionário Criado!");
                                 } else {
-                                    this.clientes.Adicionar(new Cliente(msg[2], msg[3]),
-                                            Integer.parseInt(msg[2]));
-                                    unicast(clientSocket, "Cliente Criado!");
+                                    unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
                             }
-                            break;
-                        }
-                        default:
-                            System.out.println(
-                                    "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            break;
-                    }
-                } else {
-                    System.out.println("LOGADO!");
-                    switch (msg[1]) {
-                        case "sair": {
-                            // SAIR
-                            System.out.println(
-                                    "[sair] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            this.SESSAO.put(clientSocket.getSocketAddress(), new Sessao(false, false));
-                            unicast(clientSocket, "status false");
-                            break;
-                        }
-                        case "3": {
-                            // ADICIONAR CARRO
-                            System.out.println(
-                                    "[3] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            if (Boolean.parseBoolean(msg[0])) {
-                                try {
-                                    Categoria nova;
-                                    switch (msg[4]) {
-                                        case "1":
-                                            nova = Categoria.ECONOMICO;
-                                            break;
-                                        case "2":
-                                            nova = Categoria.INTERMEDIARIO;
-                                            break;
-                                        case "3":
-                                            nova = Categoria.EXECUTIVO;
-                                            break;
-                                        default:
-                                            nova = Categoria.ECONOMICO;
-                                            break;
-                                    }
-                                    this.veiculos.Adicionar(
-                                            new Veiculo(msg[2], msg[3], nova, LocalDate.parse(msg[5]),
-                                                    Double.parseDouble(msg[6])),
-                                            Integer.parseInt(msg[2]));
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                unicast(clientSocket, "Veiculo Adicionado!");
-                            } else {
-                                unicast(clientSocket, "Sem autorização!");
-                            }
-                            break;
-                        }
-                        case "4": {
-                            // BUSCAR VEICULO
-                            System.out.println(
-                                    "[4] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            try {
-                                Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(msg[2])).getValor();
-                                unicast(clientSocket, veiculo.toString());
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                unicast(clientSocket, "Veiculo =[ " + msg[2] + " ] não encontrado!");
-                            }
-                            break;
-                        }
-                        case "5": {
-                            // LISTAR VEICULOS
-                            System.out.println(
-                                    "[5] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            try {
-                                String lista = this.veiculos.toStream()
-                                        .filter(veiculo -> veiculo.getA_venda() || veiculo.getCliente() == null)
-                                        .map(Veiculo::toString)
-                                        .collect(Collectors.joining("\n"));
-                                unicast(clientSocket, lista);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                unicast(clientSocket, "Lista vazia");
-                            }
-                            break;
-                        }
-                        case "6": {
-                            // QUANTIDADE DE CARROS
-                            System.out.println(
-                                    "[6] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            int quantidade_carros = (int) this.veiculos.toStream()
-                                    .filter(veiculo -> veiculo.getA_venda()).count();
-                            unicast(clientSocket,
-                                    "Tem " + quantidade_carros + " veículos cadastrados!");
-                            break;
-                        }
-                        case "7": {
-                            // COMPRAR CARRO
-                            System.out.println(
-                                    "[7] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            try {
-                                Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[2])).getValor();
-                                Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(msg[3])).getValor();
-                                veiculo.setA_venda(false);
-                                cliente.setVeiculo(veiculo);
-                                veiculo.setCliente(cliente);
-                                this.clientes.Atualizar(cliente, Integer.parseInt(msg[2]));
-                                this.veiculos.Atualizar(veiculo, Integer.parseInt(msg[3]));
-                                unicast(clientSocket, "Você adquiriu o carro: " + veiculo.toString());
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                unicast(clientSocket, "Cliente e/ou veículo não encontrado!");
-                            }
-                            break;
-                        }
-                        case "8": {
-                            // APAGAR CARRO
-                            System.out.println(
-                                    "[8] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            if (Boolean.parseBoolean(msg[0])) {
-                                try {
 
-                                    this.veiculos.Remover(Integer.parseInt(msg[2]));
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                unicast(clientSocket, "Veiculo Removido!");
-                            } else {
-                                unicast(clientSocket, "Sem autorização!");
-                            }
-                            break;
+                        } catch (NullPointerException e) {
+                            e.printStackTrace();
                         }
-                        case "9": {
-                            // ATUALIZAR CARRO
-                            System.out.println(
-                                    "[9] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            if (Boolean.parseBoolean(msg[0])) {
-                                try {
-                                    Categoria nova;
-                                    Veiculo veiculo_velho = this.veiculos.BuscarCF(Integer.parseInt(msg[2])).getValor();
-                                    switch (msg[4]) {
-                                        case "1":
-                                            nova = Categoria.ECONOMICO;
-                                            break;
-                                        case "2":
-                                            nova = Categoria.INTERMEDIARIO;
-                                            break;
-                                        case "3":
-                                            nova = Categoria.EXECUTIVO;
-                                            break;
-                                        default:
-                                            nova = veiculo_velho.getCategoria();
-                                            break;
-                                    }
-                                    Veiculo veiculo_novo = new Veiculo(msg[2], msg[3], nova, LocalDate.parse(msg[5]),
-                                            Double.parseDouble(msg[6]));
-                                    this.veiculos.Atualizar(veiculo_novo,
-                                            Integer.parseInt(veiculo_velho.getRenavam()));
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                unicast(clientSocket, "Veiculo Atualizado!");
-                            } else {
-                                unicast(clientSocket, "Sem autorização!");
-                            }
-                            break;
-                        }
-                        default:
-                            System.out.println(
-                                    "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            break;
+                        break;
                     }
+                    case "2": {
+                        // CRIAR CONTA USUARIO
+                        System.out.println(
+                                "[2] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                        try {
+                            if (Boolean.parseBoolean(msg[0])) {
+                                this.funcionarios.Adicionar(new Funcionario(msg[2], msg[3]),
+                                        Integer.parseInt(msg[2]));
+                                unicast(clientSocket, "Funcionário Criado!");
+                            } else {
+                                this.clientes.Adicionar(new Cliente(msg[2], msg[3]),
+                                        Integer.parseInt(msg[2]));
+                                unicast(clientSocket, "Cliente Criado!");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    }
+                    default:
+                        System.out.println(
+                                "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                        break;
                 }
             }
         } finally {

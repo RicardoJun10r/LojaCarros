@@ -4,20 +4,13 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import model.Cliente;
-import model.Funcionario;
-import model.Veiculo;
-import util.Categoria;
 import util.ClientSocket;
 import util.Sessao;
-import util.HashTable.Table;
 
 public class Gateway {
 
@@ -27,11 +20,9 @@ public class Gateway {
 
     private ServerSocket serverSocket;
 
-    private ClientSocket[] clientSocket = new ClientSocket[2];
+    private ClientSocket[] servicos = new ClientSocket[2];
 
     private final List<ClientSocket> USUARIOS = new LinkedList<>();
-
-    private final List<ClientSocket> SERVICOS = new LinkedList<>();
 
     private final Map<SocketAddress, Sessao> SESSAO = new HashMap<>();
 
@@ -41,9 +32,9 @@ public class Gateway {
     public void start() throws IOException {
         serverSocket = new ServerSocket(PORTA);
         System.out.println("Iniciando servidor na porta = " + PORTA);
-        this.clientSocket[0] = new ClientSocket(new Socket(ENDERECO_SERVER, 1050));
+        this.servicos[0] = new ClientSocket(new Socket(ENDERECO_SERVER, 1050));
         System.out.println("Conectado ao serviço de autenticação");
-        this.clientSocket[1] = new ClientSocket(new Socket(ENDERECO_SERVER, 1060));
+        this.servicos[1] = new ClientSocket(new Socket(ENDERECO_SERVER, 1060));
         System.out.println("Conectado ao serviço da loja");
         clientConnectionLoop();
     }
@@ -55,7 +46,7 @@ public class Gateway {
             this.SESSAO.put(clientSocket.getSocketAddress(), new Sessao(false, false));
             new Thread(() -> {
                 try {
-                    clientMessageLoop(clientSocket);
+                    gatewayLoop(clientSocket);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -70,22 +61,47 @@ public class Gateway {
             return false;
     }
 
-    private void clientMessageLoop(ClientSocket clientSocket) throws IOException {
+    private void gatewayLoop(ClientSocket clientSocket) throws IOException {
         String mensagem;
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
                 if (msg[0].equals("autenticar")) {
                     if (msg[1].equals("servico")) {
-
+                        System.out.println(
+                                "[autenticar-servico] Mensagem de " + clientSocket.getSocketAddress() + ": "
+                                        + mensagem);
+                        ClientSocket destinatario = this.USUARIOS.stream()
+                                .filter(c -> c.getSocketAddress().toString().equals(msg[4]))
+                                .findFirst().get();
+                        boolean logado = msg[2].contains("true");
+                        this.SESSAO.put(destinatario.getSocketAddress(),
+                                new Sessao(logado, Boolean.parseBoolean(msg[3])));
+                        unicast(destinatario, mensagem);
                     } else if (msg[1].equals("cliente")) {
-
+                        System.out.println(
+                                "[autenticar-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": "
+                                        + mensagem);
+                        unicast(this.servicos[0], mensagem + ";" + clientSocket.getSocketAddress());
                     }
                 } else if (msg[0].equals("loja")) {
                     if (msg[1].equals("servico")) {
-
+                        System.out.println(
+                                "[loja-servico] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                        ClientSocket destinatario = this.USUARIOS.stream()
+                                .filter(c -> c.getSocketAddress().toString().equals(msg[3]))
+                                .findFirst().get();
+                        unicast(destinatario, mensagem);
                     } else if (msg[1].equals("cliente")) {
-
+                        if (autenticar(clientSocket)) {
+                            System.out.println(
+                                    "[loja-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            unicast(this.servicos[1], mensagem);
+                        } else {
+                            System.out.println(
+                                    "[loja-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            unicast(clientSocket, "ACESSO NEGADO!");
+                        }
                     }
                 }
             }
