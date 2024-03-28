@@ -81,7 +81,14 @@ public class BancoDeDados {
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
+                switch (msg[0]) {
+                    case "select":
+                        
+                        break;
                 
+                    default:
+                        break;
+                }
             }
         } finally {
             clientSocket.close();

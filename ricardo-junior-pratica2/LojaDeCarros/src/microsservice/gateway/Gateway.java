@@ -82,6 +82,7 @@ public class Gateway {
                         System.out.println(
                                 "[autenticar-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": "
                                         + mensagem);
+                        // mensagem = autenticar;cliente;ADMIN;1;login;senha;socketAddress
                         unicast(this.servicos[0], mensagem + ";" + clientSocket.getSocketAddress());
                     }
                 } else if (msg[0].equals("loja")) {

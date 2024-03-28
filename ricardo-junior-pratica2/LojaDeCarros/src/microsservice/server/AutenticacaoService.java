@@ -2,6 +2,7 @@ package microsservice.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -58,66 +59,80 @@ public class AutenticacaoService {
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
-                switch (msg[2]) {
-                    case "1": {
-                        // AUTENTICAR
-                        System.out.println(
-                                "[1] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        try {
-                            if (Boolean.parseBoolean(msg[3])) {
-                                Funcionario funcionario = this.funcionarios.BuscarCF(Integer.parseInt(msg[4]))
-                                        .getValor();
-                                if (funcionario != null) {
-                                    if (msg[5].equals(funcionario.getSenha())) {
-                                        unicast(clientSocket, "autenticar;servico;status true;true" + msg[6]);
-                                    } else {
-                                        unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                                    }
-                                } else {
-                                    unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                                }
-                            } else {
-                                Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[4]))
-                                        .getValor();
-                                if (cliente != null) {
-                                    if (msg[5].equals(cliente.getSenha())) {
-                                        unicast(clientSocket, "autenticar;servico;status true;false" + msg[6]);
-                                    } else {
-                                        unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                                    }
-                                } else {
-                                    unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                                }
-                            }
+                if(msg[0].equals("response")){
 
-                        } catch (NullPointerException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    }
-                    case "2": {
-                        // CRIAR CONTA USUARIO
-                        System.out.println(
-                                "[2] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        try {
-                            if (Boolean.parseBoolean(msg[0])) {
-                                this.funcionarios.Adicionar(new Funcionario(msg[2], msg[3]),
-                                        Integer.parseInt(msg[2]));
-                                unicast(clientSocket, "Funcionário Criado!");
+                } else {
+                    switch (msg[3]) {
+                        case "1": {
+                            // AUTENTICAR
+                            System.out.println(
+                                    "[1] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            String request = "select;";
+                            if(Boolean.parseBoolean(msg[2])){
+                                request += "funcionario;";
                             } else {
-                                this.clientes.Adicionar(new Cliente(msg[2], msg[3]),
-                                        Integer.parseInt(msg[2]));
-                                unicast(clientSocket, "Cliente Criado!");
+                                request += "cliente;";
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                            request += msg[4] + " " + msg[5] + " " + msg[6];
+                            ClientSocket novo_socket = new ClientSocket(new Socket("localhost", 6666));
+                            novo_socket.sendMessage(request);
+                            novo_socket.close();
+                            // try {
+                            //     if (Boolean.parseBoolean(msg[3])) {
+                            //         Funcionario funcionario = this.funcionarios.BuscarCF(Integer.parseInt(msg[4]))
+                            //                 .getValor();
+                            //         if (funcionario != null) {
+                            //             if (msg[5].equals(funcionario.getSenha())) {
+                            //                 unicast(clientSocket, "autenticar;servico;status true;true" + msg[6]);
+                            //             } else {
+                            //                 unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
+                            //             }
+                            //         } else {
+                            //             unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
+                            //         }
+                            //     } else {
+                            //         Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[4]))
+                            //                 .getValor();
+                            //         if (cliente != null) {
+                            //             if (msg[5].equals(cliente.getSenha())) {
+                            //                 unicast(clientSocket, "autenticar;servico;status true;false" + msg[6]);
+                            //             } else {
+                            //                 unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
+                            //             }
+                            //         } else {
+                            //             unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
+                            //         }
+                            //     }
+    
+                            // } catch (NullPointerException e) {
+                            //     e.printStackTrace();
+                            // }
+                            break;
                         }
-                        break;
+                        case "2": {
+                            // CRIAR CONTA USUARIO
+                            System.out.println(
+                                    "[2] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            try {
+                                if (Boolean.parseBoolean(msg[0])) {
+                                    this.funcionarios.Adicionar(new Funcionario(msg[2], msg[3]),
+                                            Integer.parseInt(msg[2]));
+                                    unicast(clientSocket, "Funcionário Criado!");
+                                } else {
+                                    this.clientes.Adicionar(new Cliente(msg[2], msg[3]),
+                                            Integer.parseInt(msg[2]));
+                                    unicast(clientSocket, "Cliente Criado!");
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        }
+                        default:
+                            System.out.println(
+                                    "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
+                            break;
                     }
-                    default:
-                        System.out.println(
-                                "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        break;
                 }
             }
         } finally {
