@@ -64,9 +64,6 @@ public class LojaService {
         clientConnectionLoop();
     }
 
-    private void clientTable(){
-    }
-
     private void clientConnectionLoop() throws IOException {
         while (true) {
             ClientSocket clientSocket = new ClientSocket(this.serverSocket.accept());
