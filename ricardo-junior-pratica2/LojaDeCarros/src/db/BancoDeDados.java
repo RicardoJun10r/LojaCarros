@@ -10,11 +10,16 @@ import util.ClientSocket;
 import util.HashTable.Table;
 
 import java.io.IOException;
+import java.lang.NullPointerException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class BancoDeDados {
-    
+
+    private final int PORTA = 6156;
+
+    private final int AUTENTICAR_SERVICO_PORTA = 1050;
+
     private Table<Cliente, Integer> clientes;
 
     private Table<Funcionario, Integer> funcionarios;
@@ -23,10 +28,7 @@ public class BancoDeDados {
 
     private ServerSocket serverSocket;
 
-    private ClientSocket[] servicos;
-
-    public BancoDeDados(){
-        this.servicos = new ClientSocket[2];
+    public BancoDeDados() {
         this.clientes = new Table<>();
         this.veiculos = new Table<>();
         this.funcionarios = new Table<>();
@@ -76,16 +78,61 @@ public class BancoDeDados {
         }
     }
 
-    private void queries(ClientSocket clientSocket){
+    private void queries(ClientSocket clientSocket) {
         String mensagem;
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
+                System.out.println("Mensagem recebida de [ " + clientSocket.getSocketAddress() + " ] = " + mensagem);
                 switch (msg[0]) {
-                    case "select":
-                        
+                    case "funcionario": {
+                        switch (msg[1]) {
+                            case "select": {
+                                if (selectFuncionario(msg[2], msg[3]) != null) {
+                                    sendToAutenticarServico("response;login;true;" + msg[4]);
+                                } else {
+                                    sendToAutenticarServico("response;login;false;" + msg[4]);
+                                }
+                                break;
+                            }
+                            case "insert": {
+                                insertFuncionario(msg[2], msg[3]);
+                                sendToAutenticarServico("response;criado;" + msg[4]);
+                                break;
+                            }
+                            default:
+                                System.out.println("ERRO[BancoDeDados]: " + mensagem);
+                                break;
+                        }
                         break;
-                
+                    }
+                    case "cliente": {
+                        switch (msg[1]) {
+                            case "select": {
+                                System.out.println("select: " + mensagem);
+                                if (selectCliente(msg[2], msg[3]) != null) {
+                                    System.out.println("response;login;true;" + msg[4]);
+                                    sendToAutenticarServico("response;login;true;" + msg[4]);
+                                } else {
+                                    System.out.println("response;login;false;" + msg[4]);
+                                    sendToAutenticarServico("response;login;false;" + msg[4]);
+                                }
+                                break;
+                            }
+                            case "insert": {
+                                insertCliente(msg[2], msg[3]);
+                                sendToAutenticarServico("response;criado;" + msg[4]);
+                                break;
+                            }
+                            default:
+                                System.out.println("ERRO[BancoDeDados]: " + mensagem);
+                                break;
+                        }
+                        break;
+                    }
+                    case "veiculos": {
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -95,15 +142,55 @@ public class BancoDeDados {
         }
     }
 
-    private void unicast(ClientSocket destinario, String mensagem) {
-        // ClientSocket emissor = this.USUARIOS.stream()
-        //         .filter(user -> user.getSocketAddress().equals(destinario.getSocketAddress()))
-        //         .findFirst().get();
-        // emissor.sendMessage(mensagem);
+    private void sendToAutenticarServico(String mensagem) {
+        ClientSocket response;
+        try {
+            response = new ClientSocket(new Socket("localhost", AUTENTICAR_SERVICO_PORTA));
+            response.sendMessage(mensagem);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void start() throws IOException{
-        this.serverSocket = new ServerSocket(6666);
+    private Funcionario selectFuncionario(String login, String password) {
+        try {
+            Funcionario funcionario = this.funcionarios.BuscarCF(Integer.parseInt(login)).getValor();
+            if (funcionario.getSenha().equals(password)) {
+                return funcionario;
+            } else {
+                return null;
+            }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private Cliente selectCliente(String login, String password) {
+        try {
+            Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(login)).getValor();
+            if (cliente.getSenha().equals(password)) {
+                return cliente;
+            } else {
+                return null;
+            }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private void insertFuncionario(String login, String password) {
+        this.funcionarios.Adicionar(new Funcionario(login, password), Integer.parseInt(login));
+    }
+
+    private void insertCliente(String login, String password) {
+        this.clientes.Adicionar(new Cliente(login, password), Integer.parseInt(login));
+    }
+
+    public void start() throws IOException {
+        this.serverSocket = new ServerSocket(PORTA);
+        database();
     }
 
 }

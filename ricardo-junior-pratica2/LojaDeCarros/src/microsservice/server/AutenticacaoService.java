@@ -3,36 +3,20 @@ package microsservice.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedList;
-import java.util.List;
 
-import model.Cliente;
-import model.Funcionario;
 import util.ClientSocket;
-import util.HashTable.Table;
 
 public class AutenticacaoService {
 
     public final int PORTA = 1050;
 
+    public final int GATEWAY_PORTA = 1042;
+
+    public final int DATABASE_PORTA = 6156;
+
     private ServerSocket serverSocket;
 
-    private final List<ClientSocket> USUARIOS = new LinkedList<>();
-
-    private Table<Cliente, Integer> clientes;
-
-    private Table<Funcionario, Integer> funcionarios;
-
-    public AutenticacaoService() {
-        this.clientes = new Table<>();
-        this.funcionarios = new Table<>();
-        this.clientes.Adicionar(new Cliente("1234", "123"), Integer.parseInt("1234"));
-        this.clientes.Adicionar(new Cliente("4567", "456"), Integer.parseInt("4567"));
-        this.clientes.Adicionar(new Cliente("7891", "789"), Integer.parseInt("7891"));
-        this.funcionarios.Adicionar(new Funcionario("1047", "147"), Integer.parseInt("1047"));
-        this.funcionarios.Adicionar(new Funcionario("2058", "258"), Integer.parseInt("2058"));
-        this.funcionarios.Adicionar(new Funcionario("3069", "369"), Integer.parseInt("3069"));
-    }
+    public AutenticacaoService(){}
 
     public void start() throws IOException {
         serverSocket = new ServerSocket(PORTA);
@@ -43,7 +27,6 @@ public class AutenticacaoService {
     private void clientConnectionLoop() throws IOException {
         while (true) {
             ClientSocket clientSocket = new ClientSocket(this.serverSocket.accept());
-            USUARIOS.add(clientSocket);
             new Thread(() -> {
                 try {
                     clientMessageLoop(clientSocket);
@@ -59,73 +42,31 @@ public class AutenticacaoService {
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
-                if(msg[0].equals("response")){
-
+                String request;
+                if (msg[0].equals("response")) {
+                    if (msg[1].equals("login")) {
+                        sendToGateway("autenticar;servico;" + msg[1] + ";" + msg[2] + ";" + msg[3]);
+                    } else if (msg[1].equals("criado")) {
+                        sendToGateway("autenticar;servico;criado;" + msg[2]);
+                    } else {
+                        System.out.println("Erro[AutenticacaoService]: " + mensagem);
+                    }
                 } else {
                     switch (msg[3]) {
                         case "1": {
                             // AUTENTICAR
                             System.out.println(
                                     "[1] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            String request = "select;";
-                            if(Boolean.parseBoolean(msg[2])){
-                                request += "funcionario;";
-                            } else {
-                                request += "cliente;";
-                            }
-                            request += msg[4] + " " + msg[5] + " " + msg[6];
-                            ClientSocket novo_socket = new ClientSocket(new Socket("localhost", 6666));
-                            novo_socket.sendMessage(request);
-                            novo_socket.close();
-                            // try {
-                            //     if (Boolean.parseBoolean(msg[3])) {
-                            //         Funcionario funcionario = this.funcionarios.BuscarCF(Integer.parseInt(msg[4]))
-                            //                 .getValor();
-                            //         if (funcionario != null) {
-                            //             if (msg[5].equals(funcionario.getSenha())) {
-                            //                 unicast(clientSocket, "autenticar;servico;status true;true" + msg[6]);
-                            //             } else {
-                            //                 unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                            //             }
-                            //         } else {
-                            //             unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                            //         }
-                            //     } else {
-                            //         Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[4]))
-                            //                 .getValor();
-                            //         if (cliente != null) {
-                            //             if (msg[5].equals(cliente.getSenha())) {
-                            //                 unicast(clientSocket, "autenticar;servico;status true;false" + msg[6]);
-                            //             } else {
-                            //                 unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                            //             }
-                            //         } else {
-                            //             unicast(clientSocket, "autenticar;servico;status false;false" + msg[6]);
-                            //         }
-                            //     }
-    
-                            // } catch (NullPointerException e) {
-                            //     e.printStackTrace();
-                            // }
+                            request = isAdmin(msg[2]) + ";" + "select;" + msg[4] + ";" + msg[5] + ";" + msg[6];
+                            sendToDB(request);
                             break;
                         }
                         case "2": {
                             // CRIAR CONTA USUARIO
                             System.out.println(
                                     "[2] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            try {
-                                if (Boolean.parseBoolean(msg[0])) {
-                                    this.funcionarios.Adicionar(new Funcionario(msg[2], msg[3]),
-                                            Integer.parseInt(msg[2]));
-                                    unicast(clientSocket, "Funcionário Criado!");
-                                } else {
-                                    this.clientes.Adicionar(new Cliente(msg[2], msg[3]),
-                                            Integer.parseInt(msg[2]));
-                                    unicast(clientSocket, "Cliente Criado!");
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                            request = isAdmin(msg[2]) + ";" + "insert;" + msg[4] + ";" + msg[5] + ";" + msg[6];
+                            sendToDB(request);
                             break;
                         }
                         default:
@@ -140,11 +81,34 @@ public class AutenticacaoService {
         }
     }
 
-    private void unicast(ClientSocket destinario, String mensagem) {
-        ClientSocket emissor = this.USUARIOS.stream()
-                .filter(user -> user.getSocketAddress().equals(destinario.getSocketAddress()))
-                .findFirst().get();
-        emissor.sendMessage(mensagem);
+    private String isAdmin(String admin){
+        if(Boolean.parseBoolean(admin)){
+            return "funcionario";
+        } else {
+            return "cliente";
+        }
+    }
+
+    private void sendToGateway(String mensagem){
+        ClientSocket sendGateway;
+        try {
+            sendGateway = new ClientSocket(new Socket("localhost", GATEWAY_PORTA));
+            sendGateway.sendMessage(mensagem);
+            sendGateway.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendToDB(String req){
+        ClientSocket send_database;
+        try {
+            send_database = new ClientSocket(new Socket("localhost", 6156));
+            send_database.sendMessage(req);
+            send_database.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

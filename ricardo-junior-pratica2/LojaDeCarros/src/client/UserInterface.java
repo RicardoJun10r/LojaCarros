@@ -48,7 +48,7 @@ public class UserInterface implements Runnable {
             System.out.println("> Senha");
             System.out.print("> ");
             String senha = scan.next();
-            enviar(ADMIN + ";1;" + login + ";" + senha + ";");
+            enviar("autenticar;cliente;" + ADMIN + ";1;" + login + ";" + senha + ";");
         } else if (op.equals("2")) {
             String senha;
             String nova_conta = "";
@@ -59,7 +59,7 @@ public class UserInterface implements Runnable {
             System.out.print("> ");
             senha = scan.next();
             nova_conta += senha;
-            enviar(ADMIN + ";2;" + nova_conta + ";");
+            enviar("autenticar;cliente;" + ADMIN + ";2;" + nova_conta + ";");
         }
     }
 
@@ -70,7 +70,7 @@ public class UserInterface implements Runnable {
     private void menu() {
         if (ADMIN) {
             System.out.println(
-                    "> 3 [ ADICIONAR CARRO ]\n> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> 8 [ APAGAR CARRO ]\n> 9 [ ATUALIZAR CARRO ]> sair");
+                    "> 3 [ ADICIONAR CARRO ]\n> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> 8 [ APAGAR CARRO ]\n> 9 [ ATUALIZAR CARRO ]\n> sair");
         } else {
             System.out.println(
                     "> 4 [ BUSCAR CARRO ]\n> 5 [ LISTAR CARROS ]\n> 6 [ QUANTIDADE DE CARROS ]\n> 7 [ COMPRAR CARRO ]\n> sair");

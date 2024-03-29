@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import util.ClientSocket;
 import util.Sessao;
@@ -20,7 +21,9 @@ public class Gateway {
 
     private ServerSocket serverSocket;
 
-    private ClientSocket[] servicos = new ClientSocket[2];
+    // private ClientSocket[] servicos = new ClientSocket[2];
+
+    private final Vector<ClientSocket> servicos = new Vector<>();
 
     private final List<ClientSocket> USUARIOS = new LinkedList<>();
 
@@ -32,9 +35,9 @@ public class Gateway {
     public void start() throws IOException {
         serverSocket = new ServerSocket(PORTA);
         System.out.println("Iniciando servidor na porta = " + PORTA);
-        this.servicos[0] = new ClientSocket(new Socket(ENDERECO_SERVER, 1050));
+        this.servicos.add( new ClientSocket(new Socket(ENDERECO_SERVER, 1050)) );
         System.out.println("Conectado ao serviço de autenticação");
-        this.servicos[1] = new ClientSocket(new Socket(ENDERECO_SERVER, 1060));
+        // this.servicos[1] = new ClientSocket(new Socket(ENDERECO_SERVER, 1060));
         System.out.println("Conectado ao serviço da loja");
         clientConnectionLoop();
     }
@@ -66,24 +69,31 @@ public class Gateway {
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
                 String[] msg = mensagem.split(";");
+                System.out.println("Mensagem de [ " + clientSocket.getSocketAddress() + " ] = " + mensagem);
                 if (msg[0].equals("autenticar")) {
                     if (msg[1].equals("servico")) {
                         System.out.println(
                                 "[autenticar-servico] Mensagem de " + clientSocket.getSocketAddress() + ": "
                                         + mensagem);
-                        ClientSocket destinatario = this.USUARIOS.stream()
-                                .filter(c -> c.getSocketAddress().toString().equals(msg[4]))
-                                .findFirst().get();
-                        boolean logado = msg[2].contains("true");
-                        this.SESSAO.put(destinatario.getSocketAddress(),
-                                new Sessao(logado, Boolean.parseBoolean(msg[3])));
-                        unicast(destinatario, mensagem);
+                        if (msg[2].equals("login")) {
+                            if (Boolean.parseBoolean(msg[3])) {
+                                unicast_with_string(msg[4], "status true");
+                            } else {
+                                unicast_with_string(msg[4], "status false");
+                            }
+                        } else if (msg[2].equals("criado")) {
+                            unicast_with_string(msg[3], "Conta criada!");
+                        }
                     } else if (msg[1].equals("cliente")) {
                         System.out.println(
                                 "[autenticar-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": "
                                         + mensagem);
+                        // AUTENTICAR
                         // mensagem = autenticar;cliente;ADMIN;1;login;senha;socketAddress
-                        unicast(this.servicos[0], mensagem + ";" + clientSocket.getSocketAddress());
+                        // CRIAR
+                        // mensagem = autenticar;cliente;ADMIN;2;login;senha;socketAddress
+                        servicos.get(0).sendMessage(mensagem + clientSocket.getSocketAddress().toString());
+                        // unicast(servicos.get(0), mensagem + ";" + clientSocket.getSocketAddress().toString());
                     }
                 } else if (msg[0].equals("loja")) {
                     if (msg[1].equals("servico")) {
@@ -97,7 +107,7 @@ public class Gateway {
                         if (autenticar(clientSocket)) {
                             System.out.println(
                                     "[loja-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                            unicast(this.servicos[1], mensagem);
+                            unicast(servicos.get(0), mensagem);
                         } else {
                             System.out.println(
                                     "[loja-cliente] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
@@ -114,6 +124,13 @@ public class Gateway {
     private void unicast(ClientSocket destinario, String mensagem) {
         ClientSocket emissor = this.USUARIOS.stream()
                 .filter(user -> user.getSocketAddress().equals(destinario.getSocketAddress()))
+                .findFirst().get();
+        emissor.sendMessage(mensagem);
+    }
+
+    private void unicast_with_string(String destinario, String mensagem) {
+        ClientSocket emissor = this.USUARIOS.stream()
+                .filter(user -> user.getSocketAddress().toString().equals(destinario))
                 .findFirst().get();
         emissor.sendMessage(mensagem);
     }
