@@ -63,7 +63,7 @@ public class LojaService {
                             break;
                         }
                         case "deletado": {
-                            sendToGateway("loja;servico;Carro atualizado!;" + msg[2]);
+                            sendToGateway("loja;servico;Carro deletado!;" + msg[2]);
                             break;
                         }
                         default:
