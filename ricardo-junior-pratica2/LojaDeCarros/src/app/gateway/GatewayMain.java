@@ -1,6 +1,8 @@
-package microsservice.gateway;
+package app.gateway;
 
 import java.io.IOException;
+
+import microsservice.gateway.Gateway;
 
 public class GatewayMain {
     public static void main(String[] args) {

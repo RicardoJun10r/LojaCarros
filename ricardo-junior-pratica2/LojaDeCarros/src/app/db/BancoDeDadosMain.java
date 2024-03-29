@@ -1,16 +1,16 @@
-package microsservice.server;
+package app.db;
 
 import java.io.IOException;
 
-public class Loja {
-    
+import db.BancoDeDados;
+
+public class BancoDeDadosMain {
     public static void main(String[] args) {
+        BancoDeDados bancoDeDados = new BancoDeDados();
         try {
-            ServerLoja serverLoja = new ServerLoja();
-            serverLoja.start();
+            bancoDeDados.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 }

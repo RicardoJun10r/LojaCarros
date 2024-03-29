@@ -30,6 +30,9 @@ public class UserInterface implements Runnable {
         while ((mensagem = this.clientSocket.getMessage()) != null) {
             if (mensagem.split(" ")[0].equals("status")) {
                 logado = Boolean.parseBoolean(mensagem.split(" ")[1]);
+            } else if (mensagem.split(" ")[0].equals("lista")) {
+                String res = mensagem.replace("*", "\n");
+                System.out.println("Resposta da loja: " + res);
             } else {
                 System.out.println(
                         "Resposta da loja: " + mensagem);
@@ -127,12 +130,12 @@ public class UserInterface implements Runnable {
                 enviar("loja;cliente;" + msg);
                 break;
             case "5":
-                msg = ADMIN + ";5;";
+                msg = ADMIN + ";5";
                 System.out.println("> LISTANDO...");
                 enviar("loja;cliente;" + msg);
                 break;
             case "6":
-                msg = ADMIN + ";6;";
+                msg = ADMIN + ";6";
                 enviar("loja;cliente;" + msg);
                 break;
             case "7":
@@ -160,7 +163,8 @@ public class UserInterface implements Runnable {
                 System.out.println("> NOME OU * [ VAZIO ]");
                 System.out.print("> ");
                 msg += this.scan.next() + ";";
-                System.out.println("> CATEGORIA OU * [ VAZIO ]\n> 1 [ ECONOMICO ]\n> 2 [ INTERMEDIARIO ]\n> 3 [ EXECUTIVO ]");
+                System.out.println(
+                        "> CATEGORIA OU * [ VAZIO ]\n> 1 [ ECONOMICO ]\n> 2 [ INTERMEDIARIO ]\n> 3 [ EXECUTIVO ]");
                 System.out.print("> ");
                 msg += this.scan.next() + ";";
                 System.out.println("> DATA DE CRIAÇÃO [ ANO-MES-DIA ] OU * [ VAZIO ]");

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.NullPointerException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.stream.Collectors;
 
 public class BancoDeDados {
 
@@ -103,7 +104,7 @@ public class BancoDeDados {
                                 break;
                             }
                             default:
-                                System.out.println("ERRO[BancoDeDados]: " + mensagem);
+                                System.out.println("ERRO[BancoDeDados-funcionario]: " + mensagem);
                                 break;
                         }
                         break;
@@ -127,15 +128,59 @@ public class BancoDeDados {
                                 break;
                             }
                             default:
-                                System.out.println("ERRO[BancoDeDados]: " + mensagem);
+                                System.out.println("ERRO[BancoDeDados-cliente]: " + mensagem);
                                 break;
                         }
                         break;
                     }
                     case "veiculos": {
+                        switch (msg[1]) {
+                            case "select": {
+                                if(msg[2].equals("quantidade")){
+                                    sendToLojaServico("response;buscado;" + quantidadeCarros() + ";" + msg[3]);
+                                } else if (msg[2].equals("-1")) {
+                                    String response = "response;buscado;" + selectAllVeiculos() + ";" + msg[3];
+                                    System.out.println("enviando do db para o loja service: " + response);
+                                    sendToLojaServico(response);
+                                } else {
+                                    sendToLojaServico("response;buscado;" + selectVeiculo(msg[2]) + ";" + msg[3]);
+                                }
+                                break;
+                            }
+                            case "insert": {
+                                Categoria nova = setCategoria(msg[4]);
+                                Veiculo novo_veiculo = new Veiculo(msg[2], msg[3], nova,
+                                        LocalDate.parse(msg[5]), Double.valueOf(msg[6]));
+                                insertVeiculo(novo_veiculo);
+                                sendToLojaServico("response;criado;" + msg[7]);
+                                break;
+                            }
+                            case "update": {
+                                if (msg[2].equals("compra")) {
+                                    comprarVeiculo(msg[4], msg[3]);
+                                    sendToLojaServico("response;comprado;" + msg[5]);
+                                } else {
+                                    Categoria nova = setCategoria(msg[4]);
+                                    Veiculo veiculo_atualizado = new Veiculo(msg[2], msg[3], nova,
+                                            LocalDate.parse(msg[5]), Double.valueOf(msg[6]));
+                                    updateVeiculo(veiculo_atualizado);
+                                    sendToLojaServico("response;atualizado;" + msg[7]);
+                                }
+                                break;
+                            }
+                            case "delete": {
+                                deleteVeiculo(msg[2]);
+                                sendToLojaServico("response;deletado;" + msg[3]);
+                                break;
+                            }
+                            default:
+                                System.out.println("ERRO[BancoDeDados-veiculos]: " + mensagem);
+                                break;
+                        }
                         break;
                     }
                     default:
+                        System.out.println("Erro[BancoDeDados]: " + mensagem);
                         break;
                 }
             }
@@ -143,159 +188,6 @@ public class BancoDeDados {
             clientSocket.close();
         }
     }
-
-    /*
-     * switch (msg[1]) {
-                    case "3": {
-                        // ADICIONAR CARRO
-                        System.out.println(
-                                "[3] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        if (Boolean.parseBoolean(msg[0])) {
-                            try {
-                                Categoria nova;
-                                switch (msg[4]) {
-                                    case "1":
-                                        nova = Categoria.ECONOMICO;
-                                        break;
-                                    case "2":
-                                        nova = Categoria.INTERMEDIARIO;
-                                        break;
-                                    case "3":
-                                        nova = Categoria.EXECUTIVO;
-                                        break;
-                                    default:
-                                        nova = Categoria.ECONOMICO;
-                                        break;
-                                }
-                                this.veiculos.Adicionar(
-                                        new Veiculo(msg[2], msg[3], nova, LocalDate.parse(msg[5]),
-                                                Double.parseDouble(msg[6])),
-                                        Integer.parseInt(msg[2]));
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            unicast(clientSocket, "Veiculo Adicionado!");
-                        } else {
-                            unicast(clientSocket, "Sem autorização!");
-                        }
-                        break;
-                    }
-                    case "4": {
-                        // BUSCAR VEICULO
-                        System.out.println(
-                                "[4] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        try {
-                            Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(msg[2])).getValor();
-                            unicast(clientSocket, veiculo.toString());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            unicast(clientSocket, "Veiculo =[ " + msg[2] + " ] não encontrado!");
-                        }
-                        break;
-                    }
-                    case "5": {
-                        // LISTAR VEICULOS
-                        System.out.println(
-                                "[5] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        try {
-                            String lista = this.veiculos.toStream()
-                                    .filter(veiculo -> veiculo.getA_venda() || veiculo.getCliente() == null)
-                                    .map(Veiculo::toString)
-                                    .collect(Collectors.joining("\n"));
-                            unicast(clientSocket, lista);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            unicast(clientSocket, "Lista vazia");
-                        }
-                        break;
-                    }
-                    case "6": {
-                        // QUANTIDADE DE CARROS
-                        System.out.println(
-                                "[6] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        int quantidade_carros = (int) this.veiculos.toStream()
-                                .filter(veiculo -> veiculo.getA_venda()).count();
-                        unicast(clientSocket,
-                                "Tem " + quantidade_carros + " veículos cadastrados!");
-                        break;
-                    }
-                    case "7": {
-                        // COMPRAR CARRO
-                        System.out.println(
-                                "[7] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        try {
-                            Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(msg[2])).getValor();
-                            Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(msg[3])).getValor();
-                            veiculo.setA_venda(false);
-                            cliente.setVeiculo(veiculo);
-                            veiculo.setCliente(cliente);
-                            this.clientes.Atualizar(cliente, Integer.parseInt(msg[2]));
-                            this.veiculos.Atualizar(veiculo, Integer.parseInt(msg[3]));
-                            unicast(clientSocket, "Você adquiriu o carro: " + veiculo.toString());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            unicast(clientSocket, "Cliente e/ou veículo não encontrado!");
-                        }
-                        break;
-                    }
-                    case "8": {
-                        // APAGAR CARRO
-                        System.out.println(
-                                "[8] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        if (Boolean.parseBoolean(msg[0])) {
-                            try {
-
-                                this.veiculos.Remover(Integer.parseInt(msg[2]));
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            unicast(clientSocket, "Veiculo Removido!");
-                        } else {
-                            unicast(clientSocket, "Sem autorização!");
-                        }
-                        break;
-                    }
-                    case "9": {
-                        // ATUALIZAR CARRO
-                        System.out.println(
-                                "[9] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        if (Boolean.parseBoolean(msg[0])) {
-                            try {
-                                Categoria nova;
-                                Veiculo veiculo_velho = this.veiculos.BuscarCF(Integer.parseInt(msg[2])).getValor();
-                                switch (msg[4]) {
-                                    case "1":
-                                        nova = Categoria.ECONOMICO;
-                                        break;
-                                    case "2":
-                                        nova = Categoria.INTERMEDIARIO;
-                                        break;
-                                    case "3":
-                                        nova = Categoria.EXECUTIVO;
-                                        break;
-                                    default:
-                                        nova = veiculo_velho.getCategoria();
-                                        break;
-                                }
-                                Veiculo veiculo_novo = new Veiculo(msg[2], msg[3], nova, LocalDate.parse(msg[5]),
-                                        Double.parseDouble(msg[6]));
-                                this.veiculos.Atualizar(veiculo_novo,
-                                        Integer.parseInt(veiculo_velho.getRenavam()));
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            unicast(clientSocket, "Veiculo Atualizado!");
-                        } else {
-                            unicast(clientSocket, "Sem autorização!");
-                        }
-                        break;
-                    }
-                default:
-                System.out.println(
-                    "Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        break;
-                }
-     */
 
     private void sendToAutenticarServico(String mensagem) {
         ClientSocket response;
@@ -345,12 +237,84 @@ public class BancoDeDados {
         return null;
     }
 
+    private Veiculo selectVeiculo(String renavam) {
+        try {
+            Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(renavam)).getValor();
+            if (veiculo != null) {
+                return veiculo;
+            } else {
+                return null;
+            }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private Categoria setCategoria(String categoria) {
+        switch (categoria) {
+            case "1":
+                return Categoria.ECONOMICO;
+            case "2":
+                return Categoria.INTERMEDIARIO;
+            case "3":
+                return Categoria.EXECUTIVO;
+            default:
+                return Categoria.ECONOMICO;
+        }
+    }
+
+    private String selectAllVeiculos() {
+        return this.veiculos.toStream()
+                .filter(veiculo -> veiculo.getA_venda() || veiculo.getCliente() == null)
+                .map(Veiculo::toString)
+                .collect(Collectors.joining("*"));
+    }
+
     private void insertFuncionario(String login, String password) {
         this.funcionarios.Adicionar(new Funcionario(login, password), Integer.parseInt(login));
     }
 
     private void insertCliente(String login, String password) {
         this.clientes.Adicionar(new Cliente(login, password), Integer.parseInt(login));
+    }
+
+    private void insertVeiculo(Veiculo veiculo) {
+        this.veiculos.Adicionar(veiculo, Integer.parseInt(veiculo.getRenavam()));
+    }
+
+    private void updateVeiculo(Veiculo novo) {
+        try {
+            this.veiculos.Atualizar(novo, Integer.parseInt(novo.getRenavam()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void comprarVeiculo(String renavam, String cpf) {
+        try {
+            Cliente cliente = this.clientes.BuscarCF(Integer.parseInt(cpf)).getValor();
+            Veiculo veiculo = this.veiculos.BuscarCF(Integer.parseInt(renavam)).getValor();
+            veiculo.setA_venda(false);
+            cliente.setVeiculo(veiculo);
+            veiculo.setCliente(cliente);
+            this.clientes.Atualizar(cliente, Integer.parseInt(cpf));
+            this.veiculos.Atualizar(veiculo, Integer.parseInt(renavam));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int quantidadeCarros(){
+        return (int) this.veiculos.toStream().filter(carro -> carro.getA_venda()).count();
+    }
+
+    private void deleteVeiculo(String renavam) {
+        try {
+            this.veiculos.Remover(Integer.parseInt(renavam));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void start() throws IOException {

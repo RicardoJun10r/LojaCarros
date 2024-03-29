@@ -42,9 +42,34 @@ public class LojaService {
         String mensagem;
         try {
             while ((mensagem = clientSocket.getMessage()) != null) {
+                System.out.println("Mensagem de [ " + clientSocket.getSocketAddress() + " ] = " + mensagem);
                 String[] msg = mensagem.split(";");
                 if (msg[0].equals("response")) {
-
+                    switch (msg[1]) {
+                        case "buscado": {
+                            sendToGateway("loja;servico;lista;" + msg[2] + ";" + msg[3]);
+                            break;
+                        }
+                        case "criado": {
+                            sendToGateway("loja;servico;Carro adicionado!;" + msg[2]);
+                            break;
+                        }
+                        case "comprado": {
+                            sendToGateway("loja;servico;Carro comprado!;" + msg[2]);
+                            break;
+                        }
+                        case "atualizado": {
+                            sendToGateway("loja;servico;Carro atualizado!;" + msg[2]);
+                            break;
+                        }
+                        case "deletado": {
+                            sendToGateway("loja;servico;Carro atualizado!;" + msg[2]);
+                            break;
+                        }
+                        default:
+                            System.out.println("Erro[LojaService-response]: " + mensagem);
+                            break;
+                    }
                 } else {
                     switch (msg[3]) {
                         case "3": {

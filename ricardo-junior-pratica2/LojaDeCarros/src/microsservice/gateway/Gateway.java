@@ -104,10 +104,11 @@ public class Gateway {
                     if (msg[1].equals("servico")) {
                         System.out.println(
                                 "[loja-servico] Mensagem de " + clientSocket.getSocketAddress() + ": " + mensagem);
-                        ClientSocket destinatario = this.USUARIOS.stream()
-                                .filter(c -> c.getSocketAddress().toString().equals(msg[3]))
-                                .findFirst().get();
-                        unicast(destinatario, mensagem);
+                        if(msg[2].equals("lista")){
+                            unicast_with_string(msg[4], "lista " + msg[3]);
+                        } else {
+                            unicast_with_string(msg[3], msg[2]);
+                        }
                     } else if (msg[1].equals("cliente")) {
                         if (autenticar(clientSocket)) {
                             System.out.println(

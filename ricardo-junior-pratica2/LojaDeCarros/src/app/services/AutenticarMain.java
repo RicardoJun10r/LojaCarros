@@ -1,6 +1,8 @@
-package microsservice.server;
+package app.services;
 
 import java.io.IOException;
+
+import microsservice.server.AutenticacaoService;
 
 public class AutenticarMain {
     public static void main(String[] args) {
