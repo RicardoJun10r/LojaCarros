@@ -9,7 +9,7 @@ public class UserMain {
              * true --> ENTRA COMO FUNCIONARIO
              * false --> ENTRA COMO USUÁRIO NORMAL
              */
-            UserInterface usuarios = new UserInterface(true);
+            UserInterface usuarios = new UserInterface(false);
             usuarios.start();
         } catch (IOException e) {
             e.printStackTrace();

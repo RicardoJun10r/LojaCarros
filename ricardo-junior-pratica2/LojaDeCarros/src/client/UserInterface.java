@@ -117,23 +117,23 @@ public class UserInterface implements Runnable {
                 System.out.println("> PREÇO");
                 System.out.print("> R$ ");
                 msg += this.scan.next();
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "4":
                 msg = ADMIN + ";4;";
                 System.out.println("> RENAVAM");
                 System.out.print("> ");
                 msg += this.scan.next();
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "5":
                 msg = ADMIN + ";5;";
                 System.out.println("> LISTANDO...");
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "6":
                 msg = ADMIN + ";6;";
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "7":
                 msg = ADMIN + ";7;";
@@ -143,14 +143,14 @@ public class UserInterface implements Runnable {
                 System.out.println("> RENAVAM");
                 System.out.print("> ");
                 msg += this.scan.next();
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "8":
                 msg = ADMIN + ";8;";
                 System.out.println("> RENAVAM");
                 System.out.print("> ");
                 msg += this.scan.next();
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "9":
                 msg = ADMIN + ";9;";
@@ -169,7 +169,7 @@ public class UserInterface implements Runnable {
                 System.out.println("> PREÇO OU * [ VAZIO ]");
                 System.out.print("> R$ ");
                 msg += this.scan.next();
-                enviar(msg);
+                enviar("loja;cliente;" + msg);
                 break;
             case "sair":
                 System.out.println("Saindo");
